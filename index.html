@@ -666,7 +666,7 @@
     <p>Add your regular players once. Then for every session, just pick who booked and who's on court — the split and the running balances update themselves. Data is shared with anyone who has this link.</p>
     <div class="rules-strip">
       <span class="rule-chip"><b>$35</b> / hour per court</span>
-      <span class="rule-chip"><b>4</b> players per session</span>
+      <span class="rule-chip"><b>4</b> on court, up to <b>5</b> can rotate in</span>
       <span class="rule-chip"><b>1</b> booker pays up front</span>
       <span class="rule-chip">Cost splits evenly among attendees</span>
     </div>
@@ -735,8 +735,8 @@
 
           <div id="players-picker" class="players-picker" style="display:none;">
             <div class="players-picker-head">
-              <label style="margin:0;">Who's on court</label>
-              <span class="players-picker-count" id="players-count">0 / 4 selected</span>
+              <label style="margin:0;">Who played this session</label>
+              <span class="players-picker-count" id="players-count">0 / 5 selected</span>
             </div>
             <div class="players-checkboxes" id="players-checkboxes"></div>
           </div>
@@ -868,7 +868,7 @@
   const syncText = document.getElementById('sync-text');
   const resetBtn = document.getElementById('reset-btn');
 
-  const MAX_PLAYERS = 4;
+  const MAX_PLAYERS = 5; // court fits 4 at a time, but a 5th can rotate in — all who played that session still split the cost evenly
 
   /* ---------------- Firestore shared database ---------------- */
 
