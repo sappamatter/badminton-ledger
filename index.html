@@ -468,6 +468,58 @@
   .status-credit{ background: var(--credit-bg); color: var(--credit); }
   .status-settled{ background: var(--settled-bg); color: var(--settled); }
 
+  /* ---- settle up ---- */
+  .settle-intro{
+    margin: 0 0 16px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+  }
+  .settle-list{ display: flex; flex-direction: column; gap: 10px; }
+  .settle-empty{
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin: 0;
+    padding: 8px 0;
+  }
+  .settle-row{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #F7FAF6;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .settle-name{
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+  }
+  .settle-from{ color: var(--debt); }
+  .settle-to{ color: var(--credit); }
+  .settle-arrow{
+    color: var(--ink-soft);
+    display: inline-flex;
+    align-items: center;
+  }
+  .settle-amount{
+    margin-left: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--court);
+    background: var(--gold);
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  @media (max-width: 640px){
+    .settle-row{ justify-content: space-between; }
+    .settle-amount{ margin-left: 0; width: 100%; text-align: center; }
+  }
+
   /* ---- download ---- */
   .download-bar{
     display:flex;
@@ -819,10 +871,23 @@
     </div>
   </section>
 
+  <section id="settle-up">
+    <div class="section-head">
+      <h2>Settle up</h2>
+      <span class="section-num">05</span>
+    </div>
+    <div class="card">
+      <p class="settle-intro">The fewest payments needed to clear every balance to zero — who pays who, and how much.</p>
+      <div class="settle-list" id="settle-list">
+        <p class="settle-empty">Payments to make will appear here once sessions are logged.</p>
+      </div>
+    </div>
+  </section>
+
   <section id="export">
     <div class="section-head">
       <h2>Report, backup &amp; sharing</h2>
-      <span class="section-num">05</span>
+      <span class="section-num">06</span>
     </div>
 
     <div class="download-bar">
@@ -892,6 +957,7 @@
   const formError = document.getElementById('form-error');
   const tbody = document.getElementById('session-tbody');
   const balancesGrid = document.getElementById('balances-grid');
+  const settleListEl = document.getElementById('settle-list');
 
   const hoursInput = document.getElementById('hours');
   const rateInput = document.getElementById('rate');
@@ -1230,6 +1296,55 @@
   function renderAll(){
     renderSessions();
     renderBalances();
+    renderSettleUp();
+  }
+
+  // Greedy debt-simplification: matches the biggest debtor against the
+  // biggest creditor repeatedly, producing the minimum number of payments
+  // that clear every balance to zero.
+  function computeSettlements(){
+    const balances = computeBalances();
+    const debtors = balances.filter(b => b.net > 0.005).map(b => ({ name: b.name, amount: b.net }));
+    const creditors = balances.filter(b => b.net < -0.005).map(b => ({ name: b.name, amount: -b.net }));
+    debtors.sort((a,b) => b.amount - a.amount);
+    creditors.sort((a,b) => b.amount - a.amount);
+
+    const payments = [];
+    let i = 0, j = 0;
+    while(i < debtors.length && j < creditors.length){
+      const debtor = debtors[i];
+      const creditor = creditors[j];
+      const amount = Math.min(debtor.amount, creditor.amount);
+      if(amount > 0.005){
+        payments.push({ from: debtor.name, to: creditor.name, amount });
+      }
+      debtor.amount -= amount;
+      creditor.amount -= amount;
+      if(debtor.amount <= 0.005) i++;
+      if(creditor.amount <= 0.005) j++;
+    }
+    return payments;
+  }
+
+  function renderSettleUp(){
+    const payments = computeSettlements();
+    if(sessions.length === 0){
+      settleListEl.innerHTML = '<p class="settle-empty">Payments to make will appear here once sessions are logged.</p>';
+      return;
+    }
+    if(payments.length === 0){
+      settleListEl.innerHTML = '<p class="settle-empty">🎉 Everyone is settled up — no payments needed.</p>';
+      return;
+    }
+    settleListEl.innerHTML = payments.map(p => `
+      <div class="settle-row">
+        <span class="settle-name settle-from">${escapeHtml(p.from)}</span>
+        <span class="settle-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
+        <span class="settle-name settle-to">${escapeHtml(p.to)}</span>
+        <span class="settle-amount">$${p.amount.toFixed(2)}</span>
+      </div>`).join('');
   }
 
   form.addEventListener('submit', (e) => {
