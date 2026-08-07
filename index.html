@@ -59,7 +59,7 @@
     z-index: 1;
     max-width: 1040px;
     margin: 0 auto;
-    padding: 56px 24px 44px;
+    padding: clamp(28px, 7vw, 56px) clamp(16px, 4vw, 24px) clamp(24px, 6vw, 44px);
   }
   .eyebrow{
     font-family: 'IBM Plex Mono', monospace;
@@ -103,9 +103,9 @@
   main{
     max-width: 1040px;
     margin: 0 auto;
-    padding: 40px 24px 90px;
+    padding: clamp(24px, 6vw, 40px) clamp(16px, 4vw, 24px) clamp(50px, 10vw, 90px);
   }
-  section{ margin-bottom: 40px; }
+  section{ margin-bottom: clamp(28px, 6vw, 40px); }
   .section-head{
     display:flex;
     align-items: baseline;
@@ -114,6 +114,7 @@
     margin-bottom: 16px;
     border-bottom: 1px solid var(--line);
     padding-bottom: 10px;
+    flex-wrap: wrap;
   }
   .section-head h2{
     font-family: 'Oswald', sans-serif;
@@ -134,7 +135,7 @@
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
-    padding: 24px;
+    padding: clamp(16px, 4vw, 24px);
   }
 
   /* ---- roster ---- */
@@ -214,12 +215,14 @@
   label .hint{ font-weight: 400; text-transform: none; letter-spacing: 0; color: #93A199; }
   input, select{
     font-family: 'Inter', sans-serif;
-    font-size: 14.5px;
+    font-size: 16px;
     padding: 10px 12px;
     border-radius: 7px;
     border: 1px solid #C9D4C6;
     background: #FBFCFA;
     color: var(--ink);
+    min-height: 44px;
+    width: 100%;
   }
   input:focus-visible, select:focus-visible{
     outline: 2px solid var(--court-light);
@@ -298,6 +301,7 @@
     border-radius: 7px;
     border: none;
     padding: 11px 20px;
+    min-height: 44px;
     transition: transform 0.08s ease, box-shadow 0.15s ease;
   }
   button:disabled{ opacity: 0.5; cursor: not-allowed; }
@@ -321,8 +325,8 @@
   }
 
   /* ---- table ---- */
-  .table-wrap{ overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
-  table{ width: 100%; border-collapse: collapse; min-width: 720px; }
+  .table-wrap{ overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius); border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
+  table{ width: 100%; border-collapse: collapse; min-width: 640px; }
   thead th{
     font-family: 'IBM Plex Mono', monospace;
     text-transform: uppercase;
@@ -449,12 +453,64 @@
     margin-top: 10px;
   }
 
-  @media (max-width: 720px){
+  /* ---- Tablet (<=900px): tighten form grid, keep most layouts side-by-side ---- */
+  @media (max-width: 900px){
     .form-grid{ grid-template-columns: repeat(2, 1fr); }
     .field.span-2, .field.span-4{ grid-column: span 2; }
     .players-picker, .roster-nudge, .form-footer{ grid-column: span 2; }
+    .balances-grid{ grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  }
+
+  /* ---- Phone (<=640px): stack everything, full-width controls, larger tap targets ---- */
+  @media (max-width: 640px){
+    h1{ font-size: clamp(26px, 8vw, 34px); }
+    .rules-strip{ gap: 8px; }
+    .rule-chip{ font-size: 11.5px; padding: 7px 11px; }
+
+    .form-grid{ grid-template-columns: 1fr; gap: 14px; }
+    .field.span-2, .field.span-4, .players-picker, .roster-nudge, .form-footer{ grid-column: span 1; }
     .form-footer{ flex-direction: column; align-items: stretch; }
+    .form-footer button{ width: 100%; }
+
     .roster-form{ flex-direction: column; align-items: stretch; }
+    .roster-form .field{ min-width: 0; }
+    .roster-form button{ width: 100%; }
+
+    .players-checkboxes{ grid-template-columns: repeat(2, 1fr); }
+
+    section{ margin-bottom: 28px; }
+    .section-head{ margin-bottom: 12px; }
+    .section-head h2{ font-size: 17px; }
+
+    /* Table becomes horizontally scrollable; shrink text/padding so more fits per swipe */
+    table{ min-width: 560px; }
+    thead th{ padding: 10px 10px; font-size: 10px; }
+    tbody td{ padding: 10px 10px; font-size: 12.5px; }
+
+    .balances-grid{ grid-template-columns: 1fr; }
+
+    .download-bar, .backup-bar{
+      flex-direction: column;
+      align-items: stretch;
+      padding: 18px;
+    }
+    .download-bar button, .backup-actions{ width: 100%; }
+    .backup-actions{ flex-direction: column; }
+    .backup-actions button{ width: 100%; }
+    .download-bar p, .backup-bar p{ max-width: none; }
+
+    .share-row{ flex-direction: column; }
+    .share-btn{ width: 100%; justify-content: center; }
+
+    .danger-zone{ justify-content: center; }
+  }
+
+  /* ---- Small phones (<=380px): a bit more breathing room removed ---- */
+  @media (max-width: 380px){
+    .eyebrow{ font-size: 11px; }
+    .hero p{ font-size: 14px; }
+    .card{ padding: 14px; }
+    .players-checkboxes{ grid-template-columns: 1fr; }
   }
   @media (prefers-reduced-motion: reduce){
     *{ transition: none !important; }
@@ -588,7 +644,7 @@
   <div class="hero">
     <p class="eyebrow">Session Ledger · Fixed roster</p>
     <h1>Court Ledger</h1>
-    <p>Add your regular players once. Then for every session, just pick who booked and who's on court — the split and the running balances update themselves. Data is saved privately in this browser on this device only.</p>
+    <p>Add your regular players once. Then for every session, just pick who booked and who's on court — the split and the running balances update themselves. Data is shared with anyone who has this link.</p>
     <div class="rules-strip">
       <span class="rule-chip"><b>$35</b> / hour per court</span>
       <span class="rule-chip"><b>4</b> players per session</span>
@@ -597,7 +653,7 @@
     </div>
     <div class="sync-badge" id="sync-badge">
       <span class="sync-dot" id="sync-dot"></span>
-      <span id="sync-text">Loading your ledger…</span>
+      <span id="sync-text">Loading shared ledger…</span>
     </div>
   </div>
 </div>
@@ -605,7 +661,7 @@
 <div class="loading-overlay" id="loading-overlay">
   <div class="loading-box">
     <span class="loading-shuttle">🏸</span>
-    <p>Loading your ledger…</p>
+    <p>Loading the shared ledger…</p>
   </div>
 </div>
 
@@ -738,12 +794,12 @@
       </button>
     </div>
     <p class="note" id="share-status"></p>
-    <p class="note">This ledger is saved privately in this browser only — it is NOT shared automatically with anyone else who opens this link; each person gets their own separate data. Use the PDF/Excel export or the backup file below to hand data to someone else. Both share buttons build a one-page PDF snapshot of the current session log and balances: on phones/browsers that support attaching files to a native share sheet it's attached directly, otherwise it downloads to your device first (ready to attach in the chat or email manually).</p>
+    <p class="note">This ledger is saved and shared with anyone who opens this link — new sessions and roster changes sync for everyone automatically. Both share buttons build a one-page PDF snapshot of the current session log and balances: on phones/browsers that support attaching files to a native share sheet it's attached directly, otherwise it downloads to your device first (ready to attach in the chat or email manually).</p>
 
     <div class="backup-bar">
       <div>
         <h3>Local backup</h3>
-        <p>Save a copy of the roster and session log as a file on your own device — useful as a backup, or to move your data to a different device or browser.</p>
+        <p>Save a copy of the roster and session log as a file on your own device — useful as an offline backup separate from the shared link above, or to move data between links.</p>
       </div>
       <div class="backup-actions">
         <button type="button" class="btn-secondary" id="save-backup-btn">Save backup to a location I choose</button>
@@ -754,7 +810,7 @@
     <p class="note">On Chrome/Edge, "Save backup" opens your device's file picker so you choose the exact folder and filename. Browsers without that picker (Firefox, Safari) will save it to your usual Downloads folder instead.</p>
 
     <div class="danger-zone">
-      <button type="button" class="btn-danger-link" id="reset-btn">Clear all data on this device</button>
+      <button type="button" class="btn-danger-link" id="reset-btn">Clear all shared data</button>
     </div>
   </section>
 
@@ -803,25 +859,20 @@
     syncText.textContent = label;
   }
 
-  // This standalone build uses the browser's own localStorage instead of
-  // Claude's shared window.storage — each person who opens this link on
-  // their own device/browser gets their own private, local ledger. Nothing
-  // syncs between people; nothing is sent to a server.
-
   async function loadFromStorage(){
     try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(raw){
-        const parsed = JSON.parse(raw);
+      const result = await window.storage.get(STORAGE_KEY, true);
+      if(result && result.value){
+        const parsed = JSON.parse(result.value);
         roster = Array.isArray(parsed.roster) ? parsed.roster : [];
         sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
         nextId = parsed.nextId || (sessions.length ? Math.max(...sessions.map(s => s.id)) + 1 : 1);
         nextRosterId = parsed.nextRosterId || (roster.length ? Math.max(...roster.map(p => p.id)) + 1 : 0);
       }
-      setSyncState('saved', 'Saved on this device');
+      setSyncState('saved', 'Synced');
     } catch(err){
-      // No saved data yet on this device, or a read error — start empty.
-      setSyncState('saved', 'Saved on this device');
+      // No saved data yet for this link, or a read error — start with an empty ledger.
+      setSyncState('saved', 'Synced');
     }
   }
 
@@ -830,15 +881,16 @@
     setSyncState('saving', 'Saving…');
     try{
       const payload = JSON.stringify({ roster, sessions, nextId, nextRosterId });
-      localStorage.setItem(STORAGE_KEY, payload);
-      setSyncState('saved', 'Saved on this device');
+      const result = await window.storage.set(STORAGE_KEY, payload, true);
+      if(!result) throw new Error('Storage write returned no result');
+      setSyncState('saved', 'Synced');
     } catch(err){
-      setSyncState('error', 'Save failed — this browser may be blocking storage');
+      setSyncState('error', 'Sync failed — changes may not be saved');
     }
   }
 
   resetBtn.addEventListener('click', async () => {
-    if(!confirm('This clears the roster and every logged session on THIS device. Continue?')) return;
+    if(!confirm('This clears the roster and every logged session for everyone using this link. Continue?')) return;
     roster = [];
     sessions = [];
     nextId = 1;
@@ -847,10 +899,10 @@
     renderSessionFormControls();
     renderAll();
     try{
-      localStorage.removeItem(STORAGE_KEY);
-      setSyncState('saved', 'Saved on this device');
+      await window.storage.delete(STORAGE_KEY, true);
+      setSyncState('saved', 'Synced');
     } catch(err){
-      setSyncState('error', 'Reset failed');
+      setSyncState('error', 'Sync failed — changes may not be saved');
     }
   });
 
@@ -1410,7 +1462,7 @@
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(8);
     doc.setTextColor(...PDF_COLORS.inkSoft);
-    doc.text('Court Ledger: ' + window.location.href, 14, Math.min(y2, doc.internal.pageSize.getHeight() - 10));
+    doc.text('Shared ledger link: ' + window.location.href, 14, Math.min(y2, doc.internal.pageSize.getHeight() - 10));
 
     return doc.output('blob');
   }
@@ -1538,7 +1590,7 @@
       backupStatus.textContent = "That file doesn't look like a valid Court Ledger backup.";
       return;
     }
-    if(!confirm('Load this backup? It will replace the current roster and session log on this device once you confirm.')) return;
+    if(!confirm('Load this backup? It will replace the current roster and session log — for everyone using this shared link — once you confirm.')) return;
 
     roster = Array.isArray(parsed.roster) ? parsed.roster : [];
     sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
@@ -1549,24 +1601,16 @@
     renderSessionFormControls();
     renderAll();
     await saveToStorage();
-    backupStatus.textContent = 'Backup loaded and saved on this device.';
+    backupStatus.textContent = 'Backup loaded and synced to the shared link.';
   }
 
   /* ---------------- Init ---------------- */
   async function init(){
-    try{
-      await loadFromStorage();
-      renderRoster();
-      renderSessionFormControls();
-      renderAll();
-    } catch(err){
-      // Even if something above failed unexpectedly, don't leave the user
-      // stuck on the loading screen — reveal the app with whatever state
-      // we have (likely empty), rather than a permanent spinner.
-      setSyncState('error', 'Something went wrong loading data');
-    } finally {
-      document.body.classList.add('is-loaded');
-    }
+    await loadFromStorage();
+    renderRoster();
+    renderSessionFormControls();
+    renderAll();
+    document.body.classList.add('is-loaded');
   }
   init();
 </script>
