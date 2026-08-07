@@ -10,6 +10,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     color-scheme: light;
@@ -867,39 +869,71 @@
   const resetBtn = document.getElementById('reset-btn');
 
   const MAX_PLAYERS = 4;
-  const STORAGE_KEY = 'court-ledger-state';
 
-  /* ---------------- Shared storage ---------------- */
+  /* ---------------- Firestore shared database ---------------- */
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCUTQo6UmtEdAVUDxQlqpcqemWPxcNkJbo",
+    authDomain: "badminton-ledger-f363d.firebaseapp.com",
+    projectId: "badminton-ledger-f363d",
+    storageBucket: "badminton-ledger-f363d.firebasestorage.app",
+    messagingSenderId: "692856296827",
+    appId: "1:692856296827:web:c3ef02b27b6714cb18d9de",
+    measurementId: "G-V2MBD1JEJ9"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const ledgerDocRef = db.collection('ledger').doc('court-ledger-state');
+  let unsubscribeLedger = null;
+  let applyingRemoteUpdate = false; // guards against re-saving data we just received
 
   function setSyncState(kind, label){
     syncBadge.className = 'sync-badge state-' + kind;
     syncText.textContent = label;
   }
 
-  async function loadFromStorage(){
-    try{
-      const result = await window.storage.get(STORAGE_KEY, true);
-      if(result && result.value){
-        const parsed = JSON.parse(result.value);
-        roster = Array.isArray(parsed.roster) ? parsed.roster : [];
-        sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
-        nextId = parsed.nextId || (sessions.length ? Math.max(...sessions.map(s => s.id)) + 1 : 1);
-        nextRosterId = parsed.nextRosterId || (roster.length ? Math.max(...roster.map(p => p.id)) + 1 : 0);
-      }
-      setSyncState('saved', 'Synced');
-    } catch(err){
-      // No saved data yet for this link, or a read error — start with an empty ledger.
-      setSyncState('saved', 'Synced');
+  function applyDocData(docSnap){
+    if(docSnap && docSnap.exists){
+      const parsed = docSnap.data() || {};
+      roster = Array.isArray(parsed.roster) ? parsed.roster : [];
+      sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
+      nextId = parsed.nextId || (sessions.length ? Math.max(...sessions.map(s => s.id)) + 1 : 1);
+      nextRosterId = parsed.nextRosterId || (roster.length ? Math.max(...roster.map(p => p.id)) + 1 : 0);
     }
   }
 
-  let saveTimer = null;
+  async function loadFromStorage(){
+    try{
+      const docSnap = await ledgerDocRef.get();
+      applyDocData(docSnap);
+      setSyncState('saved', 'Synced');
+    } catch(err){
+      // No saved data yet, or a read error — start with an empty ledger.
+      setSyncState('error', 'Could not reach the shared database');
+    }
+
+    // Live updates: whenever ANY device (including this one) writes to the
+    // shared document, every open tab re-renders with the latest data.
+    if(unsubscribeLedger) unsubscribeLedger();
+    unsubscribeLedger = ledgerDocRef.onSnapshot((docSnap) => {
+      applyingRemoteUpdate = true;
+      applyDocData(docSnap);
+      renderRoster();
+      renderSessionFormControls();
+      renderAll();
+      applyingRemoteUpdate = false;
+      setSyncState('saved', 'Synced');
+    }, (err) => {
+      setSyncState('error', 'Live sync interrupted');
+    });
+  }
+
   async function saveToStorage(){
+    if(applyingRemoteUpdate) return; // don't echo back a write we just received
     setSyncState('saving', 'Saving…');
     try{
-      const payload = JSON.stringify({ roster, sessions, nextId, nextRosterId });
-      const result = await window.storage.set(STORAGE_KEY, payload, true);
-      if(!result) throw new Error('Storage write returned no result');
+      const payload = { roster, sessions, nextId, nextRosterId };
+      await ledgerDocRef.set(payload);
       setSyncState('saved', 'Synced');
     } catch(err){
       setSyncState('error', 'Sync failed — changes may not be saved');
@@ -916,7 +950,7 @@
     renderSessionFormControls();
     renderAll();
     try{
-      await window.storage.delete(STORAGE_KEY, true);
+      await ledgerDocRef.delete();
       setSyncState('saved', 'Synced');
     } catch(err){
       setSyncState('error', 'Sync failed — changes may not be saved');
