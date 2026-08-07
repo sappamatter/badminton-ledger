@@ -200,6 +200,27 @@
     font-style: italic;
   }
 
+  .settings-row{
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--line);
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .settings-hint{
+    flex: 1;
+    min-width: 220px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin: 0 0 2px;
+  }
+  @media (max-width: 640px){
+    .settings-row{ flex-direction: column; align-items: stretch; }
+    .settings-row .field{ max-width: none !important; }
+  }
+
   /* ---- form ---- */
   .form-grid{
     display: grid;
@@ -666,7 +687,7 @@
     <p>Add your regular players once. Then for every session, just pick who booked and who's on court — the split and the running balances update themselves. Data is shared with anyone who has this link.</p>
     <div class="rules-strip">
       <span class="rule-chip"><b>$35</b> / hour per court</span>
-      <span class="rule-chip"><b>4</b> on court, up to <b>5</b> can rotate in</span>
+      <span class="rule-chip" id="max-players-chip"><b>4</b> on court, up to <b id="max-players-chip-num">5</b> can rotate in</span>
       <span class="rule-chip"><b>1</b> booker pays up front</span>
       <span class="rule-chip">Cost splits evenly among attendees</span>
     </div>
@@ -701,6 +722,16 @@
       </form>
       <p class="error-msg" id="roster-error"></p>
       <div class="roster-list" id="roster-list"></div>
+
+      <div class="settings-row">
+        <div class="field" style="max-width: 220px;">
+          <label for="max-players-input">Max players per session</label>
+          <input type="number" id="max-players-input" min="1" max="20" step="1" value="5">
+        </div>
+        <p class="settings-hint">Court fits 4 at a time — raise this if extra
+          players rotate in during a session. Applies to every new session
+          logged from now on and syncs for everyone on this link.</p>
+      </div>
     </div>
   </section>
 
@@ -842,6 +873,7 @@
   let sessions = [];     // {id, date, hours, rate, payer, players:[...]}
   let nextId = 1;
   let nextRosterId = 0;
+  let maxPlayers = 5;    // adjustable — see "Max players per session" control
 
   const rosterForm = document.getElementById('roster-form');
   const newPlayerInput = document.getElementById('new-player');
@@ -867,8 +899,16 @@
   const syncBadge = document.getElementById('sync-badge');
   const syncText = document.getElementById('sync-text');
   const resetBtn = document.getElementById('reset-btn');
+  const maxPlayersInput = document.getElementById('max-players-input');
+  const maxPlayersChipNum = document.getElementById('max-players-chip-num');
 
-  const MAX_PLAYERS = 5; // court fits 4 at a time, but a 5th can rotate in — all who played that session still split the cost evenly
+  function syncMaxPlayersUI(){
+    if(maxPlayersInput) maxPlayersInput.value = maxPlayers;
+    if(maxPlayersChipNum) maxPlayersChipNum.textContent = maxPlayers;
+  }
+
+  // Max players per session is configurable — see maxPlayers above and the
+  // "Max players per session" control wired up further below.
 
   /* ---------------- Firestore shared database ---------------- */
 
@@ -899,6 +939,7 @@
       sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
       nextId = parsed.nextId || (sessions.length ? Math.max(...sessions.map(s => s.id)) + 1 : 1);
       nextRosterId = parsed.nextRosterId || (roster.length ? Math.max(...roster.map(p => p.id)) + 1 : 0);
+      maxPlayers = Number.isFinite(parsed.maxPlayers) && parsed.maxPlayers > 0 ? parsed.maxPlayers : 5;
     }
   }
 
@@ -920,6 +961,7 @@
       applyDocData(docSnap);
       renderRoster();
       renderSessionFormControls();
+      syncMaxPlayersUI();
       renderAll();
       applyingRemoteUpdate = false;
       setSyncState('saved', 'Synced');
@@ -932,7 +974,7 @@
     if(applyingRemoteUpdate) return; // don't echo back a write we just received
     setSyncState('saving', 'Saving…');
     try{
-      const payload = { roster, sessions, nextId, nextRosterId };
+      const payload = { roster, sessions, nextId, nextRosterId, maxPlayers };
       await ledgerDocRef.set(payload);
       setSyncState('saved', 'Synced');
     } catch(err){
@@ -946,8 +988,10 @@
     sessions = [];
     nextId = 1;
     nextRosterId = 0;
+    maxPlayers = 5;
     renderRoster();
     renderSessionFormControls();
+    syncMaxPlayersUI();
     renderAll();
     try{
       await ledgerDocRef.delete();
@@ -955,6 +999,17 @@
     } catch(err){
       setSyncState('error', 'Sync failed — changes may not be saved');
     }
+  });
+
+  maxPlayersInput.addEventListener('change', () => {
+    let val = parseInt(maxPlayersInput.value, 10);
+    if(!Number.isFinite(val) || val < 1) val = 1;
+    if(val > 20) val = 20; // sanity cap — not a real court limit, just guards against typos
+    maxPlayers = val;
+    syncMaxPlayersUI();
+    renderSessionFormControls(); // re-render the picker so the new cap takes effect immediately
+    renderAll();
+    saveToStorage();
   });
 
   function normKey(name){ return name.trim().toLowerCase().replace(/\s+/g,' '); }
@@ -1064,11 +1119,11 @@
   function syncCheckboxVisualState(){
     const boxes = Array.from(playersCheckboxesEl.querySelectorAll('input[type="checkbox"]'));
     const checkedCount = boxes.filter(b => b.checked).length;
-    playersCountEl.textContent = `${checkedCount} / ${MAX_PLAYERS} selected`;
+    playersCountEl.textContent = `${checkedCount} / ${maxPlayers} selected`;
     boxes.forEach(b => {
       const label = b.closest('.player-check');
       label.classList.toggle('checked', b.checked);
-      if(!b.checked && checkedCount >= MAX_PLAYERS){
+      if(!b.checked && checkedCount >= maxPlayers){
         b.disabled = true;
         label.classList.add('disabled');
       } else {
@@ -1195,7 +1250,7 @@
       formError.textContent = 'Select at least one player who attended.';
       return;
     }
-    if(players.length > MAX_PLAYERS){
+    if(players.length > maxPlayers){
       formError.textContent = 'A court only fits 4 players — check your selection.';
       return;
     }
@@ -1660,6 +1715,7 @@
     await loadFromStorage();
     renderRoster();
     renderSessionFormControls();
+    syncMaxPlayersUI();
     renderAll();
     document.body.classList.add('is-loaded');
   }
