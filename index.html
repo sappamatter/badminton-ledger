@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
 <title>Court Ledger — Badminton Cost Splitter</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -11,6 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root{
+    color-scheme: light;
     --bg: #F3F6F1;
     --ink: #16261F;
     --ink-soft: #4B5A52;
@@ -219,10 +221,17 @@
     padding: 10px 12px;
     border-radius: 7px;
     border: 1px solid #C9D4C6;
-    background: #FBFCFA;
+    background-color: #FBFCFA;
     color: var(--ink);
+    -webkit-text-fill-color: var(--ink);
     min-height: 44px;
     width: 100%;
+    color-scheme: light;
+  }
+  input::-webkit-date-and-time-value{ text-align: left; }
+  input[type="date"]::-webkit-calendar-picker-indicator{
+    filter: none;
+    opacity: 0.65;
   }
   input:focus-visible, select:focus-visible{
     outline: 2px solid var(--court-light);
