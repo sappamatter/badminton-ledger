@@ -224,15 +224,22 @@
     background-color: #FBFCFA;
     color: var(--ink);
     -webkit-text-fill-color: var(--ink);
-    min-height: 44px;
+    height: 44px;
+    box-sizing: border-box;
     width: 100%;
     color-scheme: light;
   }
-  input::-webkit-date-and-time-value{ text-align: left; }
-  input[type="date"]{ max-width: 100%; }
+  input::-webkit-date-and-time-value{ text-align: left; margin: 0; }
+  input[type="date"]{
+    max-width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    line-height: 22px;
+  }
   input[type="date"]::-webkit-calendar-picker-indicator{
     filter: none;
     opacity: 0.65;
+    padding: 0;
   }
   input:focus-visible, select:focus-visible{
     outline: 2px solid var(--court-light);
