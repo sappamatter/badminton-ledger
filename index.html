@@ -32,7 +32,7 @@
     --shadow: 0 1px 2px rgba(22,38,31,0.06), 0 6px 20px rgba(22,38,31,0.05);
   }
   *{ box-sizing: border-box; }
-  html,body{ margin:0; padding:0; }
+  html,body{ margin:0; padding:0; overflow-x: hidden; }
   body{
     background: var(--bg);
     color: var(--ink);
@@ -201,10 +201,10 @@
   /* ---- form ---- */
   .form-grid{
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
   }
-  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field{ display:flex; flex-direction:column; gap:6px; min-width: 0; }
   .field.span-2{ grid-column: span 2; }
   .field.span-4{ grid-column: span 4; }
   label{
@@ -229,6 +229,7 @@
     color-scheme: light;
   }
   input::-webkit-date-and-time-value{ text-align: left; }
+  input[type="date"]{ max-width: 100%; }
   input[type="date"]::-webkit-calendar-picker-indicator{
     filter: none;
     opacity: 0.65;
@@ -464,7 +465,7 @@
 
   /* ---- Tablet (<=900px): tighten form grid, keep most layouts side-by-side ---- */
   @media (max-width: 900px){
-    .form-grid{ grid-template-columns: repeat(2, 1fr); }
+    .form-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .field.span-2, .field.span-4{ grid-column: span 2; }
     .players-picker, .roster-nudge, .form-footer{ grid-column: span 2; }
     .balances-grid{ grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
@@ -476,7 +477,7 @@
     .rules-strip{ gap: 8px; }
     .rule-chip{ font-size: 11.5px; padding: 7px 11px; }
 
-    .form-grid{ grid-template-columns: 1fr; gap: 14px; }
+    .form-grid{ grid-template-columns: minmax(0, 1fr); gap: 14px; }
     .field.span-2, .field.span-4, .players-picker, .roster-nudge, .form-footer{ grid-column: span 1; }
     .form-footer{ flex-direction: column; align-items: stretch; }
     .form-footer button{ width: 100%; }
